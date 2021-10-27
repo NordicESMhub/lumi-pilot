@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+#SBATCH --account=project_465000013
+#SBATCH --partition=small
+#SBATCH --job-name=noresm-container-F2000climo
+#SBATCH --time=01:00:00
+#SBATCH --nodes=4
+#SBATCH --tasks-per-node=128
+#SBATCH --export=ALL
+#SBATCH --exclusive
+#
+export KMP_STACKSIZE=64M
+export MACHINE='container'
+export USERWORK=/scratch/project_465000013/$USER
+#
+export COMPSET='NF2000climo'
+export RES='f19_f19_mg17'
+## 1 degrees resolution
+#export RES='f09_f09_mg17'
+export STOP_N='1'
+export STOP_OPTION='nmonths'
+#
+export CASENAME='lumi_singularity_'${SLURM_JOB_NUM_NODES}'x'${SLURM_NTASKS_PER_NODE}'_'${COMPSET}'_'${RES}'_'${STOP_N}'_'${STOP_OPTION}'_'$(date +%F)
+echo 'CASENAME '$CASENAME
+#
+export IMAGE='container.sif'
+#
+srun -n 1 singularity exec --bind $USERWORK/work:/opt/esm/work,$USERWORK/inputdata_f19_f19_mg17_NF2000climo:/opt/esm/inputdata,$USERWORK/archive:/opt/esm/archive $IMAGE /opt/esm/prepare
+#
+srun -n $SLURM_NTASKS --mpi=pmi2 singularity exec --bind $USERWORK/work:/opt/esm/work,$USERWORK/inputdata_f19_f19_mg17_NF2000climo:/opt/esm/inputdata,$USERWORK/archive:/opt/esm/archive $IMAGE /opt/esm/execute
+#
+srun -n 1 --mpi=pmi2 singularity exec --bind $USERWORK/work:/opt/esm/work,$USERWORK/inputdata_f19_f19_mg17_NF2000climo:/opt/esm/inputdata,$USERWORK/archive:/opt/esm/archive $IMAGE /opt/esm/timing
